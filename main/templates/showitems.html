@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2>{{ cat_name }} Items</h2>
+{% if current_user.is_authenticated %}
+    <a class="btn btn-default" href="{{ url_for('editCategory', cat_name=cat_name) }}">Edit Category</a>
+    <a class="btn btn-danger" href="{{ url_for('deleteCategory', cat_name=cat_name) }}">Delete Category</a>
+{% endif %}
+
+{% for item in items %}
+    <p><a href="{{ url_for('showItemDescription', cat_name=cat_name, item_name=item.name) }}">{{ item.name }}</a></p>
+{% endfor %}
+
+{% if current_user.is_authenticated %}
+    <a class="btn btn-default" href="{{ url_for('newItem', cat_name=cat_name) }}">Add New Item</a>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2>{{ item.name }}</h2>
+<p>{{ item.description }}</p>
+
+{% if current_user.is_authenticated %}
+    <a class="btn btn-default" href="{{ url_for('editItem', cat_name=cat_name, item_name=item.name) }}">Edit</a>
+    <a class="btn btn-default" href="{{ url_for('showCatItems', cat_name=cat_name) }}">Back</a>
+    <a class="btn btn-danger" href="{{ url_for('deleteItem', cat_name=cat_name, item_name=item.name) }}">Delete</a>
+{% endif %}
+
+{% endblock %}

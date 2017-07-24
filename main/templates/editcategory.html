@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2>Edit Category</h2>
+
+<form action="{{ url_for('editCategory', cat_name=cat_name) }}" method="post">
+    <div class="form-group">
+        <label for="cat_name">Category Name</label><br>
+        <input type="text" name="cat_name">
+    </div>
+    <button type="submit" class="btn btn-primary">Edit</button>
+    <a href="{{ url_for('showCatalog') }}">Cancel</a>
+</form>
+
+{% endblock %}

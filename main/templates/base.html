@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Catalog Site</title>
+
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    </head>
+    <body>
+        <nav class="navbar navbar-default">
+            <div class="container">
+                <a class="navbar-brand" href="{{ url_for('showCatalog') }}">
+                    Catalog App
+                </a>
+                <ul class="nav navbar-nav">
+                    <li><a href="{{ url_for('showCatalog') }}">Home</a></li>
+                </ul>
+
+                <ul class="nav navbar-nav navbar-right">
+                    {% if current_user.is_authenticated %}
+                        <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                    {% else %}
+                        <li><a href="{{ url_for('login') }}">Login</a></li>
+                        <li><a href="{{ url_for('signup') }}">Signup</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </nav>
+
+        <div class="container">
+            <div class="jumbotron">
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                      <ul>
+                          {% for message in messages %}
+                              <li> <strong> {{ message }} </strong> </li>
+                          {% endfor %}
+                      </ul>
+                    {% endif %}
+                {% endwith %}
+
+                <div class="row">
+                    <div class="col-lg-3">
+                        <h2>Categories</h2>
+                        {% for category in categories %}
+                            <p><a href="{{ url_for('showCatItems', cat_name=category.name) }}">{{ category.name }}</a></p>
+                        {% endfor %}
+
+                        {% if current_user.is_authenticated %}
+                            <a class="btn btn-default" href="{{ url_for('newCategory') }}">Add New Category</a>
+                        {% endif %}
+                    </div>
+                    <div class="col-lg-9">
+                        {% block content %}
+                        {% endblock %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
