@@ -25,7 +25,7 @@ class User(Base):
         return pwd_context.verify(password, self.password_hash)
 
     def get_id(self):
-        return unicode(self.id)
+        return str(self.id)
 
     @property
     def serialize(self):
@@ -77,5 +77,5 @@ class Item(Base):
 
 
 
-engine = create_engine('postgresql://catalog:database@localhost/catalogdb')
+engine = create_engine('sqlite:///catalog.db')
 Base.metadata.create_all(engine)

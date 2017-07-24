@@ -23,7 +23,7 @@ auth = HTTPBasicAuth()
 
 CLIENT_ID = json.loads(open('client_secrets.json', 'r').read())['web']['client_id']
 
-engine = create_engine('postgresql://catalog:database@localhost/catalogdb')
+engine = create_engine('sqlite:///catalog.db')
 
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
@@ -65,7 +65,7 @@ def fbconnect():
         response.headers['Content-Type'] = 'application/json'
         return response
     access_token = request.data
-    print "access token received %s " % access_token
+    print ("access token received %s " % access_token)
 
 
     app_id = json.loads(open('fb_client_secrets.json', 'r').read())[
@@ -193,7 +193,7 @@ def gconnect():
     if result['issued_to'] != CLIENT_ID:
         response = make_response(
             json.dumps("Token's client ID does not match app's."), 401)
-        print "Token's client ID does not match app's."
+        print ("Token's client ID does not match app's.")
         response.headers['Content-Type'] = 'application/json'
         return response
 
@@ -333,7 +333,7 @@ def jsonItem(cat_name, item_name):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    state = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in xrange(32))
+    state = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(32))
 
     login_session['state'] = state
 
