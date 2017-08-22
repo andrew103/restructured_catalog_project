@@ -401,8 +401,12 @@ def showCatalog():
 @flask_login.login_required
 def newCategory():
     if request.method == 'POST':
+        existingCats = [cat.name for cat in session.query(Category).all()]
+
         name = request.form['cat_name']
         user = flask_login.current_user
+
+        if name in existingCats:
 
         newCat = Category(name=name, user_id=user.id)
         session.add(newCat)
@@ -420,6 +424,8 @@ def editCategory(cat_name):
     editedCat = session.query(Category).filter_by(name=cat_name).one()
     if user_check(editedCat):
         if request.method == 'POST':
+            existingCats = [cat.name for cat in session.query(Category).all()]
+
             name = request.form['cat_name']
 
             if name != '' and name != None:
@@ -471,9 +477,11 @@ def showCatItems(cat_name):
 @flask_login.login_required
 def newItem(cat_name):
     if request.method == 'POST':
+        cat = session.query(Category).filter_by(name=cat_name).one()
+        existingItems = [item.name for item in session.query(Item).filter_by(cat_id=cat.id]).all()]
+
         name = request.form['item_name']
         description = request.form['item_description']
-        cat = session.query(Category).filter_by(name=cat_name).one()
         user = flask_login.current_user
 
         createdItem = Item(name=name, description=description,
@@ -496,6 +504,9 @@ def editItem(cat_name, item_name):
     editedItem = session.query(Item).filter_by(name=item_name).one()
     if user_check(editedItem):
         if request.method == 'POST':
+            cat = session.query(Category).filter_by(name=cat_name).one()
+            existingItems = [item.name for item in session.query(Item).filter_by(cat_id=cat.id]).all()]
+
             name = request.form['item_name']
             description = request.form['item_description']
 
