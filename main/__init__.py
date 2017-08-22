@@ -484,7 +484,7 @@ def showCatItems(cat_name):
 def newItem(cat_name):
     if request.method == 'POST':
         cat = session.query(Category).filter_by(name=cat_name).one()
-        existingItems = [item.name for item in session.query(Item).filter_by(cat_id=cat.id]).all()]
+        existingItems = [item.name for item in session.query(Item).filter_by(cat_id=cat.id).all()]
 
         name = request.form['item_name']
         description = request.form['item_description']
@@ -515,7 +515,7 @@ def editItem(cat_name, item_name):
     if user_check(editedItem):
         if request.method == 'POST':
             cat = session.query(Category).filter_by(name=cat_name).one()
-            existingItems = [item.name for item in session.query(Item).filter_by(cat_id=cat.id]).all()]
+            existingItems = [item.name for item in session.query(Item).filter_by(cat_id=cat.id).all()]
 
             name = request.form['item_name']
             description = request.form['item_description']
