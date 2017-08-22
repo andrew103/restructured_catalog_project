@@ -407,6 +407,8 @@ def newCategory():
         user = flask_login.current_user
 
         if name in existingCats:
+            flash("Category already exists")
+            return redirect(url_for("showCatalog"))
 
         newCat = Category(name=name, user_id=user.id)
         session.add(newCat)
@@ -427,6 +429,10 @@ def editCategory(cat_name):
             existingCats = [cat.name for cat in session.query(Category).all()]
 
             name = request.form['cat_name']
+
+            if name in existingCats:
+                flash("Category already exists")
+                return redirect(url_for("showCatalog"))
 
             if name != '' and name != None:
                 editedCat.name = name
@@ -484,6 +490,10 @@ def newItem(cat_name):
         description = request.form['item_description']
         user = flask_login.current_user
 
+        if name in existingItems:
+            flash("Item already exists for this category")
+            return redirect(url_for("showCatItems", cat_name=cat_name))
+
         createdItem = Item(name=name, description=description,
                             cat_id=cat.id, user_id=user.id)
         session.add(createdItem)
@@ -509,6 +519,11 @@ def editItem(cat_name, item_name):
 
             name = request.form['item_name']
             description = request.form['item_description']
+
+            if name in existingItems:
+                flash("Item already exists for this category")
+                return redirect(url_for("showCatItems", cat_name=cat_name))
+
 
             if name != '' and name != None:
                 editedItem.name = name
