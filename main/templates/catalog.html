@@ -4,7 +4,11 @@
 <h2>Latest Items</h2>
 
 {% for item in latest %}
-    <p><a href="{{ url_for('showItemDescription', cat_name=item.cat_name, item_name=item.name) }}">{{ item.name }}</a> ({{ item.cat_name }})</p>
+    {% for category in categories %}
+        {% if item.cat_id==category.id %}
+	    <p><a href="{{ url_for('showItemDescription', cat_name=category.name, item_name=item.name) }}">{{ item.name }}</a> ({{ category.name }})</p>
+        {% endif %}
+    {% endfor %}
 {% endfor %}
 
 {% endblock %}

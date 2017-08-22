@@ -3,7 +3,7 @@ from flask import url_for, redirect, flash
 
 from flask import render_template as flask_render
 
-from models import Base, User, Category, Item
+from .models import Base, User, Category, Item
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from functools import wraps
@@ -15,31 +15,29 @@ from flask import session as login_session
 import random, string, json, httplib2, requests
 
 import flask_login
-from flask_login import LoginManager
-login_manager = LoginManager()
+from flask_login import LoginManager, login_user
 
-from flask.ext.httpauth import HTTPBasicAuth
-auth = HTTPBasicAuth()
+import sys
 
-CLIENT_ID = json.loads(open('client_secrets.json', 'r').read())['web']['client_id']
+#===================== INIT CODE ============================
 
-engine = create_engine('sqlite:///catalog.db')
+CLIENT_ID = json.loads(open('/var/www/catalog/main/client_secrets.json', 'r').read())['web']['client_id']
 
+engine = create_engine('postgresql://catalog:database@localhost/catalogdb')
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
+
 app = Flask(__name__)
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+app.secret_key = "catalogapplication"
+app.debug = True
 
 # ================= BEGIN LOGIN REQUIREMENT CODE ==============
-
-@auth.verify_password
-def verify_password(username, password):
-    user = session.query(User).filter_by(name = username).first()
-    if not user or not user.verify_password(password):
-        return False
-    g.user = user
-    return True
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -64,18 +62,18 @@ def fbconnect():
         response = make_response(json.dumps('Invalid state parameter.'), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
-    access_token = request.data
+    access_token = request.data.decode('utf-8')
     print ("access token received %s " % access_token)
 
 
-    app_id = json.loads(open('fb_client_secrets.json', 'r').read())[
+    app_id = json.loads(open('/var/www/catalog/main/fb_client_secrets.json', 'r').read())[
         'web']['app_id']
     app_secret = json.loads(
-        open('fb_client_secrets.json', 'r').read())['web']['app_secret']
+        open('/var/www/catalog/main/fb_client_secrets.json', 'r').read())['web']['app_secret']
     url = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=%s&client_secret=%s&fb_exchange_token=%s' % (
         app_id, app_secret, access_token)
     h = httplib2.Http()
-    result = h.request(url, 'GET')[1]
+    result = h.request(url, 'GET')[1].decode('utf-8')
 
 
     # Use token to get user info from API
@@ -91,10 +89,13 @@ def fbconnect():
 
     url = 'https://graph.facebook.com/v2.8/me?access_token=%s&fields=name,id,email' % token
     h = httplib2.Http()
-    result = h.request(url, 'GET')[1]
+    result = h.request(url, 'GET')[1].decode('utf-8')
     # print "url sent for API access:%s"% url
     # print "API JSON result: %s" % result
     data = json.loads(result)
+
+    print(data, file=sys.stdout)
+
     login_session['provider'] = 'facebook'
     login_session['username'] = data["name"]
     login_session['email'] = data["email"]
@@ -106,7 +107,7 @@ def fbconnect():
     # Get user picture
     url = 'https://graph.facebook.com/v2.8/me/picture?access_token=%s&redirect=0&height=200&width=200' % token
     h = httplib2.Http()
-    result = h.request(url, 'GET')[1]
+    result = h.request(url, 'GET')[1].decode('utf-8')
     data = json.loads(result)
 
     # see if user exists
@@ -116,7 +117,7 @@ def fbconnect():
     login_session['user_id'] = user_id
 
     user = session.query(User).filter_by(email=login_session['email']).one()
-    flask_login.login_user(user)
+    login_user(user)
     user.is_authenticated = True
 
 
@@ -139,7 +140,7 @@ def fbdisconnect():
     access_token = login_session['access_token']
     url = 'https://graph.facebook.com/%s/permissions?access_token=%s' % (facebook_id,access_token)
     h = httplib2.Http()
-    result = h.request(url, 'DELETE')[1]
+    result = h.request(url, 'DELETE')[1].decode('utf-8')
     return "you have been logged out"
 
 
@@ -160,7 +161,7 @@ def gconnect():
 
     try:
         # Upgrade the authorization code into a credentials object
-        oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
+        oauth_flow = flow_from_clientsecrets('/var/www/catalog/main/client_secrets.json', scope='')
         oauth_flow.redirect_uri = 'postmessage'
         credentials = oauth_flow.step2_exchange(code)
     except FlowExchangeError:
@@ -174,7 +175,7 @@ def gconnect():
     url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s'
            % access_token)
     h = httplib2.Http()
-    result = json.loads(h.request(url, 'GET')[1])
+    result = json.loads(h.request(url, 'GET')[1].decode('utf-8'))
     # If there was an error in the access token info, abort.
     if result.get('error') is not None:
         response = make_response(json.dumps(result.get('error')), 500)
@@ -228,7 +229,7 @@ def gconnect():
     login_session['user_id'] = user_id
 
     user = session.query(User).filter_by(email=login_session['email']).one()
-    flask_login.login_user(user)
+    login_user(user)
     user.is_authenticated = True
 
 
@@ -295,6 +296,7 @@ def gdisconnect():
 
 def render_template(template_name, **params):
     params['categories'] = session.query(Category).all()
+    params['current_user'] = flask_login.current_user
     return flask_render(template_name, **params)
 
 #=================== END TEMPLATE RENDERING ENGINE ============
@@ -343,7 +345,7 @@ def login():
         user = session.query(User).filter_by(email=email).first()
         try:
             if user.verify_password(password):
-                flask_login.login_user(user, force=True)
+                login_user(user, force=True)
                 flash("You have logged in successfully " + user.name)
                 user.is_authenticated = True
                 return redirect(url_for('showCatalog'))
@@ -378,8 +380,12 @@ def signup():
 
         session.add(newUser)
         session.commit()
-        flash("You have successfully signed up. Please Login")
-        return redirect(url_for('login'))
+
+        login_user(newUser, force=True)
+        newUser.is_authenticated=True
+
+        flash("Welcome "+user+". You have successfully signed up")
+        return redirect(url_for('showCatalog'))
     else:
         return render_template('signup.html')
 
@@ -437,6 +443,10 @@ def deleteCategory(cat_name):
     currentCat = session.query(Category).filter_by(name=cat_name).one()
     if user_check(currentCat):
         if request.method == 'POST':
+            cat_items = session.query(Item).filter_by(cat_id=currentCat.id).all()
+            for item in cat_items:
+                session.delete(item)
+
             session.delete(currentCat)
             session.commit()
 
@@ -453,7 +463,7 @@ def deleteCategory(cat_name):
 @app.route('/catalog/<string:cat_name>/items')
 def showCatItems(cat_name):
     currentCat = session.query(Category).filter_by(name=cat_name).one()
-    items = session.query(Item).filter_by(cat_name=currentCat.name).all()
+    items = session.query(Item).filter_by(cat_id=currentCat.id).all()
     return render_template('showitems.html', cat_name=cat_name, items=items)
 
 
@@ -467,7 +477,7 @@ def newItem(cat_name):
         user = flask_login.current_user
 
         createdItem = Item(name=name, description=description,
-                            cat_name=cat.name, user_id=user.id)
+                            cat_id=cat.id, user_id=user.id)
         session.add(createdItem)
         session.commit()
 
@@ -491,6 +501,7 @@ def editItem(cat_name, item_name):
 
             if name != '' and name != None:
                 editedItem.name = name
+                item_name = name
             if description != '' and description != None:
                 editedItem.description = description
 
@@ -500,7 +511,7 @@ def editItem(cat_name, item_name):
             flash("Edited " + str(name) + " successfully")
             return redirect(url_for('showItemDescription',
                                         cat_name=cat_name,
-                                        item_name=name))
+                                        item_name=item_name))
         else:
             return render_template('edititem.html',
                                     cat_name=cat_name,
@@ -543,12 +554,5 @@ def showItemDescription(cat_name, item_name):
                             item=item)
 
 
-
 if __name__ == "__main__":
-    app.secret_key = "super_secret_key"
-
-    login_manager.init_app(app)
-    login_manager.login_view = 'login'
-
-    app.debug = True
     app.run(host="0.0.0.0", port=8000)

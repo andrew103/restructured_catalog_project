@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, ForeignKeyConstraint
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
@@ -9,12 +9,12 @@ import random, string
 Base = declarative_base()
 
 class User(Base):
-    __tablename__ = 'user'
+    __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
     name = Column(String(200), nullable=False)
     email = Column(String(200))
-    password_hash = Column(String(64))
+    password_hash = Column(String(300))
     is_authenticated = Column(Boolean)
     is_active = Column(Boolean)
 
@@ -42,8 +42,8 @@ class Category(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(200), nullable=False)
-    user_id = Column(Integer, ForeignKey('user.id'))
-    user = relationship(User)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    users = relationship(User)
 
     @property
     def serialize(self):
@@ -60,9 +60,9 @@ class Item(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(200), nullable=False)
     description = Column(String(500))
-    user_id = Column(Integer, ForeignKey('user.id'))
-    user = relationship(User)
-    cat_name = Column(Integer, ForeignKey('category.name'))
+    user_id = Column(Integer, ForeignKey('users.id'))
+    users = relationship(User)
+    cat_id = Column(Integer, ForeignKey('category.id'))
     category = relationship(Category)
 
     @property
@@ -72,10 +72,10 @@ class Item(Base):
             'name': self.name,
             'description': self.description,
             'creator': self.user_id,
-            'category': self.cat_name,
+            'category': self.cat_id,
         }
 
 
 
-engine = create_engine('sqlite:///catalog.db')
+engine = create_engine('postgresql://catalog:database@localhost/catalogdb')
 Base.metadata.create_all(engine)
