@@ -570,7 +570,8 @@ def deleteItem(cat_name, item_name):
 
 @app.route('/catalog/<string:cat_name>/<string:item_name>')
 def showItemDescription(cat_name, item_name):
-    item = session.query(Item).filter_by(name=item_name).one_or_none()
+    cat = session.query(Category).filter_by(name=cat_name).one()
+    item = session.query(Item).filter_by(name=item_name, cat_id=cat.id).one_or_none()
     if item is None:
         flash("Invalid item id")
         return redirect(url_for('showCatItems', cat_name=cat_name))
