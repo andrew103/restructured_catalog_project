@@ -511,7 +511,8 @@ def newItem(cat_name):
             methods=['GET', 'POST'])
 @flask_login.login_required
 def editItem(cat_name, item_name):
-    editedItem = session.query(Item).filter_by(name=item_name).one()
+    cat = session.query(Category).filter_by(name=cat_name).one()
+    editedItem = session.query(Item).filter_by(cat_id=cat.id, name=item_name).one_or_none()
     if user_check(editedItem):
         if request.method == 'POST':
             cat = session.query(Category).filter_by(name=cat_name).one()
@@ -551,7 +552,8 @@ def editItem(cat_name, item_name):
             methods=['GET', 'POST'])
 @flask_login.login_required
 def deleteItem(cat_name, item_name):
-    currentItem = session.query(Item).filter_by(name=item_name).one()
+    cat = session.query(Category).filter_by(name=cat_name).one()
+    currentItem = session.query(Item).filter_by(cat_id=cat.id, name=item_name).one_or_none()
     if user_check(currentItem):
         if request.method == 'POST':
             session.delete(currentItem)
